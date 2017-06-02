@@ -220,6 +220,10 @@ def track_segmentio_event(request):  # pylint: disable=too-many-statements
 
     context['ip'] = segment_properties.get('context', {}).get('ip', '')
 
+    # For Business Intelligence events: Add label to context
+    if 'label' in segment_properties:
+        context['label'] = segment_properties['label']
+
     with tracker.get_tracker().context('edx.segmentio', context):
         tracker.emit(segment_event_name, segment_properties.get('data', {}))
 
