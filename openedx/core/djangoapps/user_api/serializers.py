@@ -46,6 +46,7 @@ class UserPreferenceSerializer(serializers.HyperlinkedModelSerializer):
     class Meta(object):
         model = UserPreference
         depth = 1
+        fields = '__all__'
 
 
 class RawUserPreferenceSerializer(serializers.ModelSerializer):
@@ -57,6 +58,7 @@ class RawUserPreferenceSerializer(serializers.ModelSerializer):
     class Meta(object):
         model = UserPreference
         depth = 1
+        fields = '__all__'
 
 
 class ReadOnlyFieldsSerializerMixin(object):
