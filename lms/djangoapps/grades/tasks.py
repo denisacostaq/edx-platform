@@ -58,14 +58,15 @@ def compute_all_grades_for_course(**kwargs):
     Kicks off a series of compute_grades_for_course_v2 tasks
     to cover all of the students in the course.
     """
-    for course_key, offset, batch_size in _course_task_args(course_key=kwargs.pop('course_key'), **kwargs):
+    course_key = CourseKey.from_string(kwargs.pop('course_key'))
+    for course_key_string, offset, batch_size in _course_task_args(course_key=course_key, **kwargs):
         kwargs.update({
-            'course_key': course_key,
+            'course_key': course_key_string,
             'offset': offset,
             'batch_size': batch_size,
             'routing_key': settings.POLICY_CHANGE_GRADES_ROUTING_KEY,
         })
-        compute_grades_for_course_v2.apply_async(**kwargs)
+        compute_grades_for_course_v2.apply_async(kwargs=kwargs)
 
 
 @task(base=_BaseTask, bind=True, default_retry_delay=30, max_retries=1)
@@ -94,14 +95,11 @@ def compute_grades_for_course_v2(self, **kwargs):
     if 'event_transaction_type' in kwargs:
         set_event_transaction_type(kwargs['event_transaction_type'])
 
-    course_key = kwargs.pop('course_key')
-    offset = kwargs.pop('offset')
-    batch_size = kwargs.pop('batch_size')
-    estimate_first_attempted = kwargs.pop('estimate_first_attempted', False)
-    if estimate_first_attempted:
+    if kwargs.get('estimate_first_attempted'):
         waffle().override_for_request(ESTIMATE_FIRST_ATTEMPTED, True)
+
     try:
-        return compute_grades_for_course(course_key, offset, batch_size)
+        return compute_grades_for_course(kwargs['course_key'], kwargs['offset'], kwargs['batch_size'])
     except Exception as exc:   # pylint: disable=broad-except
         raise self.retry(kwargs=kwargs, exc=exc)
 
@@ -115,7 +113,6 @@ def compute_grades_for_course(course_key, offset, batch_size, **kwargs):  # pyli
     limited to at most <batch_size> students, starting from the specified
     offset.
     """
-
     course = courses.get_course_by_id(CourseKey.from_string(course_key))
     enrollments = CourseEnrollment.objects.filter(course_id=course.id).order_by('created')
     student_iter = (enrollment.user for enrollment in enrollments[offset:offset + batch_size])
