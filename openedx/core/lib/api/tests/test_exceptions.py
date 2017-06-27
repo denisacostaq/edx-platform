@@ -17,7 +17,7 @@ class TestDictExceptionsAllowDictDetails(TestCase):
     def test_drf_errors_are_not_coerced_to_strings(self):
         # Demonstrate that dictionaries in exceptions are not coerced to strings.
         exc = drf_exceptions.AuthenticationFailed({u'error_code': -1})
-        self.assertIsNotInstance(exc.detail, basestring)
+        self.assertNotIsInstance(exc.detail, basestring)
 
     @ddt.data(
         drf_exceptions.AuthenticationFailed,
