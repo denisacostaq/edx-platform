@@ -81,9 +81,6 @@ LOW_PRIORITY_QUEUE = 'edx.{0}core.low'.format(QUEUE_VARIANT)
 CELERY_DEFAULT_QUEUE = DEFAULT_PRIORITY_QUEUE
 CELERY_DEFAULT_ROUTING_KEY = DEFAULT_PRIORITY_QUEUE
 
-# Queue to use for updating grades due to grading policy change
-POLICY_CHANGE_GRADES_ROUTING_KEY = LOW_PRIORITY_QUEUE
-
 CELERY_QUEUES = {
     HIGH_PRIORITY_QUEUE: {},
     LOW_PRIORITY_QUEUE: {},
@@ -406,6 +403,9 @@ CELERY_QUEUES.update(
         if alternate not in CELERY_QUEUES.keys()
     }
 )
+
+# Queue to use for updating grades due to grading policy change
+POLICY_CHANGE_GRADES_ROUTING_KEY = ENV_TOKENS.get('POLICY_CHANGE_GRADES_ROUTING_KEY', LOW_PRIORITY_QUEUE)
 
 # Event tracking
 TRACKING_BACKENDS.update(AUTH_TOKENS.get("TRACKING_BACKENDS", {}))
