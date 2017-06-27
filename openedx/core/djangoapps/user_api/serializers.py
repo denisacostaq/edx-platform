@@ -39,14 +39,14 @@ class UserSerializer(serializers.HyperlinkedModelSerializer):
 
 class UserPreferenceSerializer(serializers.HyperlinkedModelSerializer):
     """
-    Serializer that generates a represenation of a UserPreference entity
+    Serializer that generates a representation of a UserPreference entity.
     """
     user = UserSerializer()
 
     class Meta(object):
         model = UserPreference
         depth = 1
-        fields = '__all__'
+        fields = ('user', 'key', 'value')
 
 
 class RawUserPreferenceSerializer(serializers.ModelSerializer):
@@ -58,7 +58,7 @@ class RawUserPreferenceSerializer(serializers.ModelSerializer):
     class Meta(object):
         model = UserPreference
         depth = 1
-        fields = '__all__'
+        fields = ('user', 'key', 'value')
 
 
 class ReadOnlyFieldsSerializerMixin(object):
