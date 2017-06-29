@@ -113,6 +113,7 @@ def update_user_preferences(requesting_user, update, user=None):
     for preference_key in update.keys():
         preference_value = update[preference_key]
         if preference_value is not None:
+            preference_value = unicode(preference_value)
             try:
                 serializer = create_user_preference_serializer(user, preference_key, preference_value)
                 validate_user_preference_serializer(serializer, preference_key, preference_value)
@@ -129,6 +130,7 @@ def update_user_preferences(requesting_user, update, user=None):
     for preference_key in update.keys():
         preference_value = update[preference_key]
         if preference_value is not None:
+            preference_value = unicode(preference_value)
             try:
                 serializer = serializers[preference_key]
 
@@ -166,7 +168,8 @@ def set_user_preference(requesting_user, preference_key, preference_value, usern
         UserAPIInternalError: the operation failed due to an unexpected error.
     """
     existing_user = _get_authorized_user(requesting_user, username)
-    preference_value = unicode(preference_value)
+    if preference_value is not None:
+        preference_value = unicode(preference_value)
     serializer = create_user_preference_serializer(existing_user, preference_key, preference_value)
     validate_user_preference_serializer(serializer, preference_key, preference_value)
 
