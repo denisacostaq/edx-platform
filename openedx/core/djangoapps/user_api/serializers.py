@@ -46,7 +46,7 @@ class UserPreferenceSerializer(serializers.HyperlinkedModelSerializer):
     class Meta(object):
         model = UserPreference
         depth = 1
-        fields = ('user', 'key', 'value')
+        fields = ('user', 'key', 'value', 'url')
 
 
 class RawUserPreferenceSerializer(serializers.ModelSerializer):
@@ -58,7 +58,7 @@ class RawUserPreferenceSerializer(serializers.ModelSerializer):
     class Meta(object):
         model = UserPreference
         depth = 1
-        fields = ('user', 'key', 'value')
+        fields = ('user', 'key', 'value', 'url')
 
 
 class ReadOnlyFieldsSerializerMixin(object):
