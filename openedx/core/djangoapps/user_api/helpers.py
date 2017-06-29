@@ -407,8 +407,8 @@ def shim_student_view(view_func, check_logged_in=False):
     """
     @wraps(view_func)
     def _inner(request):  # pylint: disable=missing-docstring
-        # Ensure that the POST querydict is mutable
-        request.POST = request.POST.copy()
+        # Make a copy of the current POST request to modify.
+        request._data = request.POST.copy()
 
         # The login and registration handlers in student view try to change
         # the user's enrollment status if these parameters are present.
@@ -416,9 +416,9 @@ def shim_student_view(view_func, check_logged_in=False):
         # the enrollment API, we want to prevent the student views from
         # updating enrollments.
         if "enrollment_action" in request.POST:
-            del request.POST["enrollment_action"]
+            del request._data["enrollment_action"]
         if "course_id" in request.POST:
-            del request.POST["course_id"]
+            del request._data["course_id"]
 
         # Include the course ID if it's specified in the analytics info
         # so it can be included in analytics events.
@@ -426,7 +426,7 @@ def shim_student_view(view_func, check_logged_in=False):
             try:
                 analytics = json.loads(request.POST["analytics"])
                 if "enroll_course_id" in analytics:
-                    request.POST["course_id"] = analytics.get("enroll_course_id")
+                    request._data["course_id"] = analytics.get("enroll_course_id")
             except (ValueError, TypeError):
                 LOGGER.error(
                     u"Could not parse analytics object sent to user API: {analytics}".format(
