@@ -1,13 +1,14 @@
 """
 Tests for the views
 """
-import ddt
 import os
 import shutil
 import tarfile
 import tempfile
 from datetime import datetime
 from urllib import urlencode
+
+import celery
 
 from django.core.urlresolvers import reverse
 from path import Path as path
@@ -21,7 +22,6 @@ from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, 
 from xmodule.modulestore.tests.factories import CourseFactory
 
 
-@ddt.ddt
 class CourseImportViewTest(SharedModuleStoreTestCase, APITestCase):
     """
     Test importing courses via a RESTful API (POST method only)
@@ -139,4 +139,4 @@ class CourseImportViewTest(SharedModuleStoreTestCase, APITestCase):
             resp = self.client.post(self.get_url(), {'course_data': fp}, format='multipart')
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         resp = self.client.get(self.get_url(), {'task_id': resp.data['task_id']}, format='multipart')
-        self.assertEqual(resp.data['state'], "Succeeded")  # @TODO Make this reference a constant
+        self.assertEqual(resp.data['state'], celery.states.SUCCESS)

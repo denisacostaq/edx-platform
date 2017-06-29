@@ -11,7 +11,6 @@ from django.contrib.auth import get_user_model
 from django.views.decorators.csrf import csrf_exempt
 
 from django.core.files import File
-from django.http import Http404
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey
 from rest_framework import status
@@ -36,7 +35,7 @@ class CourseImportExportViewMixin(DeveloperErrorViewMixin):
     """
     def perform_authentication(self, request):
         """
-        Ensures that the user is authenticated (e.g. not an AnonymousUser), unless DEBUG mode is enabled.
+        Ensures that the user is authenticated (e.g. not an AnonymousUser)
         """
         super(CourseImportExportViewMixin, self).perform_authentication(request)
         if request.user.is_anonymous():
@@ -55,15 +54,15 @@ class CourseImportView(CourseImportExportViewMixin, GenericAPIView):
 
     **POST Parameters**
 
-        A POST request may include the following parameters.
+        A POST request must include the following parameters.
 
         * course_id: (required) A string representation of a Course ID.
         * course_data: (required) The course .tar.gz file to import
 
     **POST Response Values**
 
-        If the import task is started successfully
-        is successful, an HTTP 200 "OK" response is returned.
+        If the import task is started successfully, an HTTP 200 "OK" response is
+        returned.
 
         The HTTP 200 response has the following values.
 
@@ -72,9 +71,9 @@ class CourseImportView(CourseImportExportViewMixin, GenericAPIView):
 
     **Example POST Response**
 
-        [{
+        {
             "task_id": "4b357bb3-2a1e-441d-9f6c-2210cf76606f"
-        }]
+        }
 
     """
     def post(self, request, course_id):
@@ -87,7 +86,7 @@ class CourseImportView(CourseImportExportViewMixin, GenericAPIView):
             course_id (string): URI element specifying the course location.
 
         Return:
-            The UUID of the task to check status on later
+            task_id: The UUID of the task to check status on later
         """
 
         courselike_key = CourseKey.from_string(course_id)
@@ -98,12 +97,21 @@ class CourseImportView(CourseImportExportViewMixin, GenericAPIView):
                 error_code='user_mismatch'
             )
         try:
+            if(not 'course_data' in request.FILES):
+                return self.make_error_response(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    developer_message='Missing required parameter',
+                    error_code='internal_error',
+                    field_errors={'course_data':'"course_data" parameter is required, and must be a .tar.gz file'}
+                )
+
             filename = request.FILES['course_data'].name
             if not filename.endswith('.tar.gz'):
                 return self.make_error_response(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    developer_message='We only support uploading a .tar.gz file.',
-                    error_code='user_mismatch'
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    developer_message='Parameter in the wrong format',
+                    error_code='internal_error',
+                    field_errors={'course_data':'"course_data" parameter is required, and must be a .tar.gz file'}
                 )
             course_dir = path(settings.GITHUB_REPO_ROOT) / base64.urlsafe_b64encode(repr(courselike_key))
             temp_filepath = course_dir / filename
@@ -143,7 +151,7 @@ class CourseImportView(CourseImportExportViewMixin, GenericAPIView):
 
     **GET Parameters**
 
-        A GET request may include the following parameters.
+        A GET request must include the following parameters.
 
         * task_id: (required) The UUID of the task to check
 
@@ -174,7 +182,8 @@ class CourseImportView(CourseImportExportViewMixin, GenericAPIView):
             task_id (string): URI element specifying the course location.
 
         Return:
-            The UUID of the task to check status on later
+        state (string): State of the task, one of the celery states as documented
+            here: http://docs.celeryproject.org/en/latest/reference/celery.states.html
         """
 
         courselike_key = CourseKey.from_string(course_id)
@@ -190,11 +199,6 @@ class CourseImportView(CourseImportExportViewMixin, GenericAPIView):
             return Response({
                 'state': task_status.state
             })
-
-            #log.debug('importing course to {0}'.format())
-
-            #log.info("Course import %s: Upload complete", courselike_key)
-
         except Exception as e:
             return self.make_error_response(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
