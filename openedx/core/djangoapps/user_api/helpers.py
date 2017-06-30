@@ -408,25 +408,31 @@ def shim_student_view(view_func, check_logged_in=False):
     @wraps(view_func)
     def _inner(request):  # pylint: disable=missing-docstring
         # Make a copy of the current POST request to modify.
-        request._data = request.POST.copy()
+        modified_request = request.POST.copy()
+        try:
+            # Works for an HttpRequest but not a rest_framework.request.Request.
+            request.POST = modified_request
+        except AttributeError:
+            # The request must be a rest_framework.request.Request.
+            request._data = modified_request
 
         # The login and registration handlers in student view try to change
         # the user's enrollment status if these parameters are present.
         # Since we want the JavaScript client to communicate directly with
         # the enrollment API, we want to prevent the student views from
         # updating enrollments.
-        if "enrollment_action" in request.POST:
-            del request._data["enrollment_action"]
-        if "course_id" in request.POST:
-            del request._data["course_id"]
+        if "enrollment_action" in modified_request:
+            del modified_request["enrollment_action"]
+        if "course_id" in modified_request:
+            del modified_request["course_id"]
 
         # Include the course ID if it's specified in the analytics info
         # so it can be included in analytics events.
-        if "analytics" in request.POST:
+        if "analytics" in modified_request:
             try:
-                analytics = json.loads(request.POST["analytics"])
+                analytics = json.loads(modified_request["analytics"])
                 if "enroll_course_id" in analytics:
-                    request._data["course_id"] = analytics.get("enroll_course_id")
+                    modified_request["course_id"] = analytics.get("enroll_course_id")
             except (ValueError, TypeError):
                 LOGGER.error(
                     u"Could not parse analytics object sent to user API: {analytics}".format(
