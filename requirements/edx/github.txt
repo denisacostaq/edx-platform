@@ -78,7 +78,7 @@ git+https://github.com/edx/lettuce.git@0.2.20.002#egg=lettuce==0.2.20.002
 git+https://github.com/edx/edx-ora2.git@74b13ea9317b3baba9b20e056292895405c91137#egg=ora2==0.0
 git+https://github.com/edx/edx-submissions.git@2cadc99b7d4c1400c21834916b3c6f7b064d6a67#egg=edx-submissions==0.0
 git+https://github.com/edx/ease.git@release-2015-07-14#egg=ease==0.1.3
-git+https://github.com/edx/edx-val.git@0304a9b1f7a416afccf3f3b464124bd5afdf01ab#egg=edxval==0.0
+git+https://github.com/edx/edx-val.git@7641fe3919cf10cca7f21127cf5816cd52f7b76e#egg=edxval==0.0
 git+https://github.com/pmitros/RecommenderXBlock.git@v1.2#egg=recommender-xblock==1.2
 git+https://github.com/solashirai/crowdsourcehinter.git@518605f0a95190949fe77bd39158450639e2e1dc#egg=crowdsourcehinter-xblock==0.1
 -e git+https://github.com/pmitros/RateXBlock.git@367e19c0f6eac8a5f002fd0f1559555f8e74bfff#egg=rate-xblock
