@@ -93,16 +93,14 @@ class OAuth2AuthenticationAllowInactiveUser(OAuth2Authentication):
         try:
             return super(OAuth2AuthenticationAllowInactiveUser, self).authenticate(*args, **kwargs)
         except AuthenticationFailed as exc:
-            if 'No credentials provided' in exc.detail:
+            developer_message = exc.detail['developer_message']
+            if 'No credentials provided' in developer_message:
                 error_code = OAUTH2_TOKEN_ERROR_NOT_PROVIDED
-            elif 'Token string should not contain spaces' in exc.detail:
+            elif 'Token string should not contain spaces' in developer_message:
                 error_code = OAUTH2_TOKEN_ERROR_MALFORMED
             else:
                 error_code = OAUTH2_TOKEN_ERROR
-            raise AuthenticationFailed({
-                u'error_code': error_code,
-                u'developer_message': exc.detail
-            })
+            raise AuthenticationFailed(exc.detail)
 
     def authenticate_credentials(self, request, access_token):
         """
