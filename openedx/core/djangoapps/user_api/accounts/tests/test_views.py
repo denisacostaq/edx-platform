@@ -672,7 +672,6 @@ class TestAccountsAPI(CacheIsolationTestCase, UserAPITestCase):
         # `LanguageProficiencySerializer.get_identity` method, which compares
         # identifies language proficiencies based on their language code rather
         # than django model id.
-        import ipdb;ipdb.set_trace()
         for proficiencies in ([{"code": "en"}, {"code": "fr"}, {"code": "es"}], [{"code": "fr"}], [{"code": "aa"}], []):
             response = self.send_patch(client, {"language_proficiencies": proficiencies})
             self.assertItemsEqual(response.data["language_proficiencies"], proficiencies)
