@@ -8,8 +8,6 @@ import tempfile
 from datetime import datetime
 from urllib import urlencode
 
-import celery
-
 from django.core.urlresolvers import reverse
 from path import Path as path
 from mock import patch
@@ -18,6 +16,7 @@ from rest_framework.test import APITestCase
 
 from lms.djangoapps.courseware.tests.factories import GlobalStaffFactory, StaffFactory
 from student.tests.factories import UserFactory
+from user_tasks.models import UserTaskStatus
 from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, SharedModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory
 
@@ -139,4 +138,4 @@ class CourseImportViewTest(SharedModuleStoreTestCase, APITestCase):
             resp = self.client.post(self.get_url(), {'course_data': fp}, format='multipart')
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         resp = self.client.get(self.get_url(), {'task_id': resp.data['task_id']}, format='multipart')
-        self.assertEqual(resp.data['state'], celery.states.SUCCESS)
+        self.assertEqual(resp.data['state'], UserTaskStatus.SUCCEEDED)

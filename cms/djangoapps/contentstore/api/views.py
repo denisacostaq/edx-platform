@@ -97,12 +97,12 @@ class CourseImportView(CourseImportExportViewMixin, GenericAPIView):
                 error_code='user_mismatch'
             )
         try:
-            if(not 'course_data' in request.FILES):
+            if('course_data' not in request.FILES):
                 return self.make_error_response(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     developer_message='Missing required parameter',
                     error_code='internal_error',
-                    field_errors={'course_data':'"course_data" parameter is required, and must be a .tar.gz file'}
+                    field_errors={'course_data': '"course_data" parameter is required, and must be a .tar.gz file'}
                 )
 
             filename = request.FILES['course_data'].name
@@ -111,7 +111,7 @@ class CourseImportView(CourseImportExportViewMixin, GenericAPIView):
                     status_code=status.HTTP_400_BAD_REQUEST,
                     developer_message='Parameter in the wrong format',
                     error_code='internal_error',
-                    field_errors={'course_data':'"course_data" parameter is required, and must be a .tar.gz file'}
+                    field_errors={'course_data': '"course_data" parameter is required, and must be a .tar.gz file'}
                 )
             course_dir = path(settings.GITHUB_REPO_ROOT) / base64.urlsafe_b64encode(repr(courselike_key))
             temp_filepath = course_dir / filename
@@ -182,8 +182,7 @@ class CourseImportView(CourseImportExportViewMixin, GenericAPIView):
             task_id (string): URI element specifying the course location.
 
         Return:
-        state (string): State of the task, one of the celery states as documented
-            here: http://docs.celeryproject.org/en/latest/reference/celery.states.html
+        state (string): State of the task, one of the UserTaskState statuses
         """
 
         courselike_key = CourseKey.from_string(course_id)
