@@ -157,19 +157,19 @@ class CourseImportView(CourseImportExportViewMixin, GenericAPIView):
 
     **GET Response Values**
 
-        If the import task is started successfully
-        is successful, an HTTP 200 "OK" response is returned.
+        If the import task is found successfully by the UUID provided, an HTTP
+        200 "OK" response is returned.
 
         The HTTP 200 response has the following values.
 
-        * task_id: UUID of the created task, usable for checking status
+        * state: String description of the state of the task
 
 
     **Example GET Response**
 
-        [{
-            "task_id": "4b357bb3-2a1e-441d-9f6c-2210cf76606f"
-        }]
+        {
+            "state": "Succeeded"
+        }
 
     """
     def get(self, request, course_id):
@@ -182,7 +182,7 @@ class CourseImportView(CourseImportExportViewMixin, GenericAPIView):
             task_id (string): URI element specifying the course location.
 
         Return:
-        state (string): State of the task, one of the UserTaskState statuses
+            state (string): State of the task, one of the UserTaskState statuses
         """
 
         courselike_key = CourseKey.from_string(course_id)

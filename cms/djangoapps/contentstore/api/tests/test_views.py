@@ -1,5 +1,5 @@
 """
-Tests for the views
+Tests for the course import API views
 """
 import os
 import shutil
@@ -40,6 +40,7 @@ class CourseImportViewTest(SharedModuleStoreTestCase, APITestCase):
         cls.password = 'test'
         cls.student = UserFactory(username='dummy', password=cls.password)
         cls.staff = StaffFactory(course_key=cls.course.id, password=cls.password)
+        cls.restricted_staff = StaffFactory(course_key=cls.restricted_course.id, password=cls.password)
 
         cls.content_dir = path(tempfile.mkdtemp())
 
@@ -127,6 +128,13 @@ class CourseImportViewTest(SharedModuleStoreTestCase, APITestCase):
         resp = self.client.get(self.get_url(), {'task_id': '1234'})
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
 
+    def test_anonymous_get_status_fails(self):
+        """
+        Test that an anonymous user cannot access the API and an error is received.
+        """
+        resp = self.client.get(self.get_url(), {'task_id': '1234'})
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
     def test_staff_get_status_succeeds(self):
         """
         Test that an import followed by a get status results in success
@@ -139,3 +147,24 @@ class CourseImportViewTest(SharedModuleStoreTestCase, APITestCase):
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         resp = self.client.get(self.get_url(), {'task_id': resp.data['task_id']}, format='multipart')
         self.assertEqual(resp.data['state'], UserTaskStatus.SUCCEEDED)
+
+    def test_staff_no_access_get_status_fails(self):
+        """
+        Test that an import followed by a get status as an unauthorized staff fails
+
+        Note: This relies on the fact that we process imports synchronously during testing
+        """
+        self.client.login(username=self.staff.username, password=self.password)
+        with open(self.good_tar, 'rb') as fp:
+            resp = self.client.post(self.get_url(), {'course_data': fp}, format='multipart')
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+
+        task_id = resp.data['task_id']
+        resp = self.client.get(self.get_url(), {'task_id': task_id}, format='multipart')
+        self.assertEqual(resp.data['state'], UserTaskStatus.SUCCEEDED)
+
+        self.client.logout()
+
+        self.client.login(username=self.restricted_staff.username, password=self.password)
+        resp = self.client.get(self.get_url(), {'task_id': task_id}, format='multipart')
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
