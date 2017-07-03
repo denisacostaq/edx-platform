@@ -28,7 +28,7 @@ class WelcomeMessageFragmentView(EdxFragmentView):
         Returns: A fragment, or None if there is no welcome message.
         """
         course_key = CourseKey.from_string(course_id)
-        course = get_course_with_access(request.user, 'load', course_key, check_if_enrolled=True)
+        course = get_course_with_access(request.user, 'load', course_key, check_if_enrolled=False)
         welcome_message_html = self.welcome_message_html(request, course)
         if not welcome_message_html:
             return None
