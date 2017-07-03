@@ -1081,6 +1081,8 @@ class CourseEnrollment(models.Model):
         Returns:
             Course enrollment object or None
         """
+        if not user or user.is_anonymous():
+            return None
         try:
             return cls.objects.get(
                 user=user,
@@ -1442,6 +1444,8 @@ class CourseEnrollment(models.Model):
             and is_active is whether the enrollment is active.
         Returns (None, None) if the courseenrollment record does not exist.
         """
+        if user.is_anonymous():
+            return None, None
         enrollment_state = cls._get_enrollment_state(user, course_id)
         return enrollment_state.mode, enrollment_state.is_active
 

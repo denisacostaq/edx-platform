@@ -2,7 +2,6 @@
 Views for the course home page.
 """
 
-from django.contrib.auth.decorators import login_required
 from django.core.context_processors import csrf
 from django.template.loader import render_to_string
 from django.utils.decorators import method_decorator
@@ -11,7 +10,7 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from opaque_keys.edx.keys import CourseKey
 from web_fragments.fragment import Fragment
 
-from courseware.courses import get_course_info_section, get_course_with_access
+from courseware.courses import get_course_info_section, get_course_with_access, is_enrolled_in_course_or_staff
 from lms.djangoapps.courseware.views.views import CourseTabView
 from openedx.core.djangoapps.plugin_api.views import EdxFragmentView
 from util.views import ensure_valid_course_key
@@ -27,7 +26,6 @@ class CourseHomeView(CourseTabView):
     """
     The home page for a course.
     """
-    @method_decorator(login_required)
     @method_decorator(ensure_csrf_cookie)
     @method_decorator(cache_control(no_cache=True, no_store=True, must_revalidate=True))
     @method_decorator(ensure_valid_course_key)
@@ -89,25 +87,35 @@ class CourseHomeFragmentView(EdxFragmentView):
         """
         course_key = CourseKey.from_string(course_id)
 
-        # Render the outline as a fragment
-        outline_fragment = CourseOutlineFragmentView().render_to_fragment(request, course_id=course_id, **kwargs)
-
-        # Get resume course information
-        has_visited_course, resume_course_url = self._get_resume_course_info(request, course_id)
-
-        # Render the welcome message as a fragment
-        welcome_message_fragment = WelcomeMessageFragmentView().render_to_fragment(
-            request, course_id=course_id, **kwargs
-        )
-
         # Render the course dates as a fragment
         dates_fragment = CourseDatesFragmentView().render_to_fragment(request, course_id=course_id, **kwargs)
 
         # TODO: Use get_course_overview_with_access and blocks api
-        course = get_course_with_access(request.user, 'load', course_key, check_if_enrolled=True)
+        course = get_course_with_access(request.user, 'load', course_key)
 
-        # Render the verification sock as a fragment
-        course_sock_fragment = CourseSockFragmentView().render_to_fragment(request, course=course, **kwargs)
+        # Determine if the user is enrolled in the course (or is staff)
+        is_enrolled_or_staff = is_enrolled_in_course_or_staff(course_key, request.user)
+
+        # Render only a subset of content for unenrolled users who are not staff
+        if is_enrolled_or_staff:
+            outline_fragment = CourseOutlineFragmentView().render_to_fragment(request, course_id=course_id, **kwargs)
+
+            # Render the welcome message as a fragment
+            welcome_message_fragment = WelcomeMessageFragmentView().render_to_fragment(
+                request, course_id=course_id, **kwargs
+            )
+
+            # Render the verification sock as a fragment
+            course_sock_fragment = CourseSockFragmentView().render_to_fragment(request, course=course, **kwargs)
+
+            # Get resume course information
+            has_visited_course, resume_course_url = self._get_resume_course_info(request, course_id)
+        else:
+            outline_fragment = None
+            welcome_message_fragment = None
+            course_sock_fragment = None
+            has_visited_course = None
+            resume_course_url = None
 
         # Get the handouts
         handouts_html = get_course_info_section(request, request.user, course, 'handouts')
@@ -118,6 +126,7 @@ class CourseHomeFragmentView(EdxFragmentView):
             'csrf': csrf(request)['csrf_token'],
             'course': course,
             'course_key': course_key,
+            'is_enrolled_or_staff': is_enrolled_or_staff,
             'outline_fragment': outline_fragment,
             'handouts_html': handouts_html,
             'has_visited_course': has_visited_course,

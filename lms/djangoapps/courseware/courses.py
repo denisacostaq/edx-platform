@@ -108,6 +108,17 @@ def get_course_overview_with_access(user, action, course_key, check_if_enrolled=
     return course_overview
 
 
+def is_enrolled_in_course_or_staff(course_key, user):
+    """
+    Returns true if the user is enrolled in the specified course.
+
+    Note: users with staff access return True even if not enrolled.
+    """
+    if user.is_anonymous():
+        return False
+    return CourseEnrollment.is_enrolled(user, course_key) or has_access(user, 'staff', course_key)
+
+
 def check_course_access(course, user, action, check_if_enrolled=False):
     """
     Check that the user has the access to perform the specified action
@@ -127,7 +138,7 @@ def check_course_access(course, user, action, check_if_enrolled=False):
         # Verify that the user is either enrolled in the course or a staff
         # member.  If the user is not enrolled, raise a Redirect exception
         # that will be handled by middleware.
-        if not ((user.id and CourseEnrollment.is_enrolled(user, course.id)) or has_access(user, 'staff', course)):
+        if not is_enrolled_in_course_or_staff(course.id, user):
             raise CourseAccessRedirect(reverse('about_course', args=[unicode(course.id)]))
 
 
