@@ -3,6 +3,7 @@ Views for the course home page.
 """
 
 from django.core.context_processors import csrf
+from django.core.urlresolvers import reverse
 from django.template.loader import render_to_string
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_control
@@ -10,7 +11,13 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from opaque_keys.edx.keys import CourseKey
 from web_fragments.fragment import Fragment
 
-from courseware.courses import get_course_info_section, get_course_with_access, is_enrolled_in_course_or_staff
+from courseware.courses import (
+    can_user_enroll_in_course,
+    get_course_info_section,
+    get_course_with_access,
+    is_enrolled_in_course_or_staff
+)
+from lms.djangoapps.courseware.exceptions import CourseAccessRedirect
 from lms.djangoapps.courseware.views.views import CourseTabView
 from openedx.core.djangoapps.plugin_api.views import EdxFragmentView
 from util.views import ensure_valid_course_key
@@ -111,6 +118,12 @@ class CourseHomeFragmentView(EdxFragmentView):
             # Get resume course information
             has_visited_course, resume_course_url = self._get_resume_course_info(request, course_id)
         else:
+            # Redirect the user to the dashboard if they are not enrolled and
+            # this is a course that does not support direct enrollment.
+            if not can_user_enroll_in_course(course_key):
+                raise CourseAccessRedirect(reverse('dashboard'))
+
+            # Set all the fragments
             outline_fragment = None
             welcome_message_fragment = None
             course_sock_fragment = None
