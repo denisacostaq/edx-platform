@@ -146,7 +146,7 @@ class CourseImportViewTest(SharedModuleStoreTestCase, APITestCase):
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
 
         task_id = resp.data['task_id']
-        resp = self.client.get(self.get_url(), {'task_id': task_id}, format='multipart')
+        resp = self.client.get(self.get_url(self.course_key), {'task_id': task_id}, format='multipart')
         self.assertEqual(resp.data['state'], UserTaskStatus.SUCCEEDED)
 
         self.client.logout()
