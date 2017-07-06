@@ -133,7 +133,7 @@ class CourseImportViewTest(SharedModuleStoreTestCase, APITestCase):
         Test that an anonymous user cannot access the API and an error is received.
         """
         resp = self.client.get(self.get_url(), {'task_id': '1234'})
-        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(resp.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_staff_get_status_succeeds(self):
         """
