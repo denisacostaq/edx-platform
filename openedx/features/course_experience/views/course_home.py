@@ -10,9 +10,10 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from opaque_keys.edx.keys import CourseKey
 from web_fragments.fragment import Fragment
 
-from courseware.courses import get_course_info_section, get_course_with_access, is_enrolled_in_course_or_staff
+from courseware.courses import get_course_info_section, get_course_with_access
 from lms.djangoapps.courseware.views.views import CourseTabView
 from openedx.core.djangoapps.plugin_api.views import EdxFragmentView
+from student.models import CourseEnrollment
 from util.views import ensure_valid_course_key
 
 from ..utils import get_course_outline_block_tree
@@ -86,15 +87,13 @@ class CourseHomeFragmentView(EdxFragmentView):
         Renders the course's home page as a fragment.
         """
         course_key = CourseKey.from_string(course_id)
+        course = get_course_with_access(request.user, 'load', course_key)
 
         # Render the course dates as a fragment
         dates_fragment = CourseDatesFragmentView().render_to_fragment(request, course_id=course_id, **kwargs)
 
-        # TODO: Use get_course_overview_with_access and blocks api
-        course = get_course_with_access(request.user, 'load', course_key)
-
         # Determine if the user is enrolled in the course (or is staff)
-        is_enrolled_or_staff = is_enrolled_in_course_or_staff(course_key, request.user)
+        is_enrolled_or_staff = CourseEnrollment.is_enrolled(request.user, course_key)
 
         # Render only a subset of content for unenrolled users who are not staff
         if is_enrolled_or_staff:

@@ -5,7 +5,7 @@ import ddt
 
 from django.core.urlresolvers import reverse
 from openedx.core.djangoapps.waffle_utils.testutils import WAFFLE_TABLES, override_waffle_flag
-from openedx.features.course_experience import UNIFIED_COURSE_TAB_FLAG
+from openedx.features.course_experience import SHOW_REVIEWS_TOOL_FLAG, UNIFIED_COURSE_TAB_FLAG
 from student.models import CourseEnrollment
 from student.tests.factories import UserFactory
 from xmodule.modulestore import ModuleStoreEnum
@@ -127,6 +127,7 @@ class TestCourseHomePageAccess(CourseHomePageTestCase):
     Test access to the course home page.
     """
     @override_waffle_flag(UNIFIED_COURSE_TAB_FLAG, active=True)
+    @override_waffle_flag(SHOW_REVIEWS_TOOL_FLAG, active=True)
     @ddt.data(
         'anonymous',
         'unenrolled',

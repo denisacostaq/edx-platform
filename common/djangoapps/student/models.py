@@ -1082,7 +1082,8 @@ class CourseEnrollment(models.Model):
         Returns:
             Course enrollment object or None
         """
-        if not user or user.is_anonymous():
+        assert user
+        if user.is_anonymous():
             return None
         try:
             return cls.objects.get(
@@ -1399,11 +1400,8 @@ class CourseEnrollment(models.Model):
 
         `course_id` is our usual course_id string (e.g. "edX/Test101/2013_Fall)
         """
-        if not user.is_authenticated():
-            return False
-        else:
-            enrollment_state = cls._get_enrollment_state(user, course_key)
-            return enrollment_state.is_active or False
+        enrollment_state = cls._get_enrollment_state(user, course_key)
+        return enrollment_state.is_active or False
 
     @classmethod
     def is_enrolled_by_partial(cls, user, course_id_partial):
@@ -1445,8 +1443,6 @@ class CourseEnrollment(models.Model):
             and is_active is whether the enrollment is active.
         Returns (None, None) if the courseenrollment record does not exist.
         """
-        if user.is_anonymous():
-            return None, None
         enrollment_state = cls._get_enrollment_state(user, course_id)
         return enrollment_state.mode, enrollment_state.is_active
 
@@ -1708,6 +1704,8 @@ class CourseEnrollment(models.Model):
         Returns the CourseEnrollmentState for the given user
         and course_key, caching the result for later retrieval.
         """
+        if user.is_anonymous():
+            return CourseEnrollmentState(None, None)
         enrollment_state = cls._get_enrollment_in_request_cache(user, course_key)
         if not enrollment_state:
             try:
