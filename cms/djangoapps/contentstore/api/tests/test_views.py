@@ -60,7 +60,6 @@ class CourseImportViewTest(SharedModuleStoreTestCase, APITestCase):
         with tarfile.open(cls.good_tar, "w:gz") as gtar:
             gtar.add(good_dir)
 
-
     def get_url(self, course_id):
         """
         Helper function to create the url
