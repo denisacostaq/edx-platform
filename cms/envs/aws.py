@@ -396,6 +396,10 @@ ALTERNATE_QUEUES = [
     DEFAULT_PRIORITY_QUEUE.replace(QUEUE_VARIANT, alternate + '.')
     for alternate in ALTERNATE_QUEUE_ENVS
 ]
+
+if ENV_TOKENS.get('POLICY_CHANGE_GRADES_ROUTING_KEY'):
+    ALTERNATE_QUEUES.append(ENV_TOKENS.get('POLICY_CHANGE_GRADES_ROUTING_KEY'))
+
 CELERY_QUEUES.update(
     {
         alternate: {}

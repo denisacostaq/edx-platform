@@ -49,7 +49,7 @@ class AlternateEnvironmentRouter(object):
             (
                 queue
                 for queue in queues
-                if '.{}.'.format(desired_env) in queue
+                if '.{}'.format(desired_env) in queue
             ),
             None
         )
