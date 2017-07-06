@@ -27,6 +27,9 @@ from openedx.features.course_experience import course_home_page_title
                     </div>
                 </div>
             </nav>
+            % if course_reviews_provider_fragment:
+                <div class="btn toggle-read-write-reviews">${_('Write a Review')}</div>
+            % endif
         </div>
     </header>
     <div class="course-reviews-tool">

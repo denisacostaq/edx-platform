@@ -2,7 +2,7 @@
 
 <%page expression_filter="h"/>
 
-<%namespace name='static' file='../static_content.html'/>
+<%namespace name='static' file='../../static_content.html'/>
 
 <%!
 from openedx.features.course_experience import SHOW_REVIEWS_TOOL_FLAG
@@ -12,7 +12,13 @@ from openedx.features.course_experience import SHOW_REVIEWS_TOOL_FLAG
     <div class="coursetalk-read-reviews">
         ## Coursetalk Widget
         <div id="ct-custom-read-review-widget" data-provider="${platform_key}" data-course="${course.id}"></div>
+        <script class="coursetalk-reviews-script" src="//d3q6qq2zt8nhwv.cloudfront.net/s/js/widgets/coursetalk-read-reviews.js"></script>
     </div>
-
-    <script src="//d3q6qq2zt8nhwv.cloudfront.net/s/js/widgets/coursetalk-read-reviews.js"></script>
 % endif
+
+<%static:webpack entry="CoursetalkReviews">
+    new CoursetalkReviews({
+        el:'.course-reviews.container'
+    });
+</%static:webpack>
+
