@@ -46,17 +46,21 @@ class CourseImportView(CourseImportExportViewMixin, GenericAPIView):
     """
     **Use Case**
 
-        * Start an asynchronous task to import a course from a .tar.gz file into the specified course ID
+        * Start an asynchronous task to import a course from a .tar.gz file into
+        the specified course ID, overwriting the existing course
+        * Get a status on an asynchronous task import
 
-    **Example Request**
+    **Example Requests**
 
-        POST /api/courses/v0/import/course-v1:edX+DemoX+Demo_Course/
+        POST /api/courses/v0/import/{course_id}/
+        GET /api/courses/v0/import/{course_id}/?task_id={task_id}
 
     **POST Parameters**
 
         A POST request must include the following parameters.
 
-        * course_id: (required) A string representation of a Course ID.
+        * course_id: (required) A string representation of a Course ID,
+                                e.g., course-v1:edX+DemoX+Demo_Course
         * course_data: (required) The course .tar.gz file to import
 
     **POST Response Values**
@@ -75,18 +79,33 @@ class CourseImportView(CourseImportExportViewMixin, GenericAPIView):
             "task_id": "4b357bb3-2a1e-441d-9f6c-2210cf76606f"
         }
 
+    **GET Parameters**
+
+        A GET request must include the following parameters.
+
+        * task_id: (required) The UUID of the task to check, e.g. "4b357bb3-2a1e-441d-9f6c-2210cf76606f"
+
+    **GET Response Values**
+
+        If the import task is found successfully by the UUID provided, an HTTP
+        200 "OK" response is returned.
+
+        The HTTP 200 response has the following values.
+
+        * state: String description of the state of the task
+
+
+    **Example GET Response**
+
+        {
+            "state": "Succeeded"
+        }
+
     """
     def post(self, request, course_id):
         """
         Kicks off an asynchronous course import and returns an ID to be used to check
         the task's status
-
-        Args:
-            request (Request): Django request object.
-            course_id (string): URI element specifying the course location.
-
-        Return:
-            task_id: The UUID of the task to check status on later
         """
 
         courselike_key = CourseKey.from_string(course_id)
@@ -97,7 +116,7 @@ class CourseImportView(CourseImportExportViewMixin, GenericAPIView):
                 error_code='user_mismatch'
             )
         try:
-            if('course_data' not in request.FILES):
+            if 'course_data' not in request.FILES:
                 return self.make_error_response(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     developer_message='Missing required parameter',
@@ -140,49 +159,10 @@ class CourseImportView(CourseImportExportViewMixin, GenericAPIView):
                 error_code='internal_error'
             )
 
-    """
-    **Use Case**
 
-        * Get a status on an asynchronous task import
-
-    **Example Request**
-
-        GET /api/courses/v0/import/course-v1:edX+DemoX+Demo_Course/
-
-    **GET Parameters**
-
-        A GET request must include the following parameters.
-
-        * task_id: (required) The UUID of the task to check
-
-    **GET Response Values**
-
-        If the import task is found successfully by the UUID provided, an HTTP
-        200 "OK" response is returned.
-
-        The HTTP 200 response has the following values.
-
-        * state: String description of the state of the task
-
-
-    **Example GET Response**
-
-        {
-            "state": "Succeeded"
-        }
-
-    """
     def get(self, request, course_id):
         """
         Check the status of the specified task
-
-        Args:
-            request (Request): Django request object.
-            course_id (string): URI element specifying the course location.
-            task_id (string): URI element specifying the course location.
-
-        Return:
-            state (string): State of the task, one of the UserTaskState statuses
         """
 
         courselike_key = CourseKey.from_string(course_id)
