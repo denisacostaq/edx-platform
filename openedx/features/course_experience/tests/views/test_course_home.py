@@ -3,7 +3,9 @@ Tests for the course home page.
 """
 import ddt
 
+from courseware.tests.factories import StaffFactory
 from django.core.urlresolvers import reverse
+from django.utils.http import urlquote_plus
 from openedx.core.djangoapps.waffle_utils.testutils import WAFFLE_TABLES, override_waffle_flag
 from openedx.features.course_experience import SHOW_REVIEWS_TOOL_FLAG, UNIFIED_COURSE_TAB_FLAG
 from student.models import CourseEnrollment
@@ -42,7 +44,9 @@ class CourseHomePageTestCase(SharedModuleStoreTestCase):
     """
     @classmethod
     def setUpClass(cls):
-        """Set up the simplest course possible."""
+        """
+        Set up a course to be used for testing.
+        """
         # setUpClassAndTestData() already calls setUpClass on SharedModuleStoreTestCase
         # pylint: disable=super-method-not-called
         with super(CourseHomePageTestCase, cls).setUpClassAndTestData():
@@ -62,6 +66,7 @@ class CourseHomePageTestCase(SharedModuleStoreTestCase):
     @classmethod
     def setUpTestData(cls):
         """Set up and enroll our fake user in the course."""
+        cls.staff_user = StaffFactory(course_key=cls.course.id, password=TEST_PASSWORD)
         cls.user = UserFactory(password=TEST_PASSWORD)
         CourseEnrollment.enroll(cls.user, cls.course.id)
 
@@ -126,28 +131,49 @@ class TestCourseHomePageAccess(CourseHomePageTestCase):
     """
     Test access to the course home page.
     """
-    @override_waffle_flag(UNIFIED_COURSE_TAB_FLAG, active=True)
-    @override_waffle_flag(SHOW_REVIEWS_TOOL_FLAG, active=True)
-    @ddt.data(
-        'anonymous',
-        'unenrolled',
-        'enrolled',
-    )
-    def test_home_page(self, user_type):
-        is_enrolled = user_type is 'enrolled'
 
-        # Set up the test user
-        if user_type is not 'anonymous':
-            self.user = UserFactory(password=TEST_PASSWORD)
-            self.client.login(username=self.user.username, password=TEST_PASSWORD)
-            if is_enrolled:
-                CourseEnrollment.enroll(self.user, self.course.id)
+    def setUp(self):
+        super(TestCourseHomePageAccess, self).setUp()
 
         # Make this a verified course so that an upgrade message might be shown
         add_course_mode(self.course, upgrade_deadline_expired=False)
 
-        # Create a welcome message
-        create_course_update(self.course, self.user, TEST_WELCOME_MESSAGE)
+        # Add a welcome message
+        create_course_update(self.course, self.staff_user, TEST_WELCOME_MESSAGE)
+
+    def _create_test_user(self, user_type):
+        """
+        Create a test user of the specified type.
+
+        Valid values for user type:
+          anonymous - an anonymous user
+          enrolled - a user enrolled in the test course
+          unenrolled - a logged in user but not enrolled
+          unenrolled_staff - an unenrolled staff user
+        """
+        is_enrolled = user_type is 'enrolled'
+        is_unenrolled_staff = user_type is 'unenrolled_staff'
+
+        # Set up the test user
+        if user_type is not 'anonymous':
+            if is_unenrolled_staff:
+                self.user = self.staff_user
+            else:
+                self.user = UserFactory(password=TEST_PASSWORD)
+            self.client.login(username=self.user.username, password=TEST_PASSWORD)
+            if is_enrolled:
+                CourseEnrollment.enroll(self.user, self.course.id)
+
+    @override_waffle_flag(UNIFIED_COURSE_TAB_FLAG, active=True)
+    @override_waffle_flag(SHOW_REVIEWS_TOOL_FLAG, active=True)
+    @ddt.data(
+        'anonymous',
+        'enrolled',
+        'unenrolled',
+        'unenrolled_staff',
+    )
+    def test_home_page(self, user_type):
+        self._create_test_user(user_type)
 
         # Render the course home page
         url = course_home_url(self.course)
@@ -159,8 +185,52 @@ class TestCourseHomePageAccess(CourseHomePageTestCase):
 
         # Verify that the outline, start button, course sock, and welcome message
         # are only shown to enrolled users.
-        expected_count = 1 if is_enrolled else 0
+        is_enrolled = user_type is 'enrolled'
+        is_unenrolled_staff = user_type is 'unenrolled_staff'
+        expected_count = 1 if (is_enrolled or is_unenrolled_staff) else 0
         self.assertContains(response, TEST_CHAPTER_NAME, count=expected_count)
         self.assertContains(response, 'Start Course', count=expected_count)
         self.assertContains(response, 'Learn About Verified Certificate', count=expected_count)
         self.assertContains(response, TEST_WELCOME_MESSAGE, count=expected_count)
+
+    @override_waffle_flag(UNIFIED_COURSE_TAB_FLAG, active=False)
+    @override_waffle_flag(SHOW_REVIEWS_TOOL_FLAG, active=True)
+    @ddt.data(
+        'anonymous',
+        'enrolled',
+        'unenrolled',
+        'unenrolled_staff',
+    )
+    def test_home_page_not_unified(self, user_type):
+        """
+        Verifies the course home tab when not unified.
+        """
+        self._create_test_user(user_type)
+
+        # Render the course home page
+        url = course_home_url(self.course)
+        response = self.client.get(url)
+
+        # Verify that the course tools and dates are always shown
+        self.assertContains(response, 'Course Tools')
+        self.assertContains(response, 'Today is')
+
+        # Verify that welcome messages are never shown
+        self.assertNotContains(response, TEST_WELCOME_MESSAGE)
+
+        # Verify that the outline, start button, course sock, and welcome message
+        # are only shown to enrolled users.
+        is_enrolled = user_type is 'enrolled'
+        is_unenrolled_staff = user_type is 'unenrolled_staff'
+        expected_count = 1 if (is_enrolled or is_unenrolled_staff) else 0
+        self.assertContains(response, TEST_CHAPTER_NAME, count=expected_count)
+        self.assertContains(response, 'Start Course', count=expected_count)
+        self.assertContains(response, 'Learn About Verified Certificate', count=expected_count)
+
+    def test_sign_in_button(self):
+        """
+        Verify that the sign in button will return to this page.
+        """
+        url = course_home_url(self.course)
+        response = self.client.get(url)
+        self.assertContains(response, '/login?next={url}'.format(url=urlquote_plus(url)))

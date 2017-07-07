@@ -15,7 +15,6 @@ from django_comment_client.permissions import has_permission
 from openedx.core.djangolib.js_utils import dump_js_escaped_json, js_escaped_string
 from openedx.core.djangolib.markup import HTML
 from openedx.features.course_experience import UNIFIED_COURSE_TAB_FLAG, SHOW_REVIEWS_TOOL_FLAG
-from openedx.features.course_experience.course_tools import CourseToolsPluginManager
 %>
 
 <%block name="content">
@@ -69,12 +68,6 @@ from openedx.features.course_experience.course_tools import CourseToolsPluginMan
                 % endif
             </main>
             <aside class="course-sidebar layout-col layout-col-a">
-                <%
-                course_tools = filter(
-                    lambda tool: tool.is_enabled(request, course_key),
-                    CourseToolsPluginManager.get_course_tools()
-                )
-                %>
                 % if course_tools:
                     <div class="section section-tools">
                         <h3 class="hd-6">${_("Course Tools")}</h3>

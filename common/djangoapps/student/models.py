@@ -134,6 +134,8 @@ def anonymous_id_for_user(user, course_id, save=True):
     save -- Whether the id should be saved in an AnonymousUserId object.
     """
     # This part is for ability to get xblock instance in xblock_noauth handlers, where user is unauthenticated.
+    assert user
+
     if user.is_anonymous():
         return None
 
@@ -681,6 +683,8 @@ class PasswordHistory(models.Model):
         Returns whether a password has 'expired' and should be reset. Note there are two different
         expiry policies for staff and students
         """
+        assert user
+
         if not settings.FEATURES['ADVANCED_SECURITY']:
             return False
 
@@ -736,6 +740,8 @@ class PasswordHistory(models.Model):
         """
         Verifies that the password adheres to the reuse policies
         """
+        assert user
+
         if not settings.FEATURES['ADVANCED_SECURITY']:
             return True
 
@@ -1083,6 +1089,7 @@ class CourseEnrollment(models.Model):
             Course enrollment object or None
         """
         assert user
+
         if user.is_anonymous():
             return None
         try:
@@ -1497,6 +1504,8 @@ class CourseEnrollment(models.Model):
         Returns:
             str: Hash of the user's active enrollments. If the user is anonymous, `None` is returned.
         """
+        assert user
+
         if user.is_anonymous():
             return None
 
@@ -1704,6 +1713,8 @@ class CourseEnrollment(models.Model):
         Returns the CourseEnrollmentState for the given user
         and course_key, caching the result for later retrieval.
         """
+        assert user
+
         if user.is_anonymous():
             return CourseEnrollmentState(None, None)
         enrollment_state = cls._get_enrollment_in_request_cache(user, course_key)

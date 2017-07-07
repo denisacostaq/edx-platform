@@ -115,7 +115,7 @@ def check_course_access(course, user, action, check_if_enrolled=False):
 
     check_if_enrolled: If true, additionally verifies that the user is enrolled.
     """
-    # Allow staff full access to the course
+    # Allow staff full access to the course even if not enrolled
     if has_access(user, 'staff', course.id):
         return
 
