@@ -1,12 +1,11 @@
 /*
-  This file is to enable users on the coursetalk reviews
-  page to both view and write reviews.
+  Enable users to switch between viewing and writing CourseTalk reviews.
  */
 
-export class CoursetalkReviews {  // eslint-disable-line import/prefer-default-export
+export class CourseTalkReviews {  // eslint-disable-line import/prefer-default-export
   constructor() {
-    const $coursetalkToggleReadWriteReviews = $('.toggle-read-write-reviews');
-    const $coursetalkScriptObject = $('.coursetalk-reviews-script');
+    const $courseTalkToggleReadWriteReviews = $('.toggle-read-write-reviews');
+    const $courseTalkScriptObject = $('.coursetalk-reviews-script');
 
     const readSrc = '//d3q6qq2zt8nhwv.cloudfront.net/s/js/widgets/coursetalk-read-reviews.js';
     const writeSrc = '//d3q6qq2zt8nhwv.cloudfront.net/s/js/widgets/coursetalk-write-reviews.js';
@@ -16,14 +15,14 @@ export class CoursetalkReviews {  // eslint-disable-line import/prefer-default-e
       $.ajaxSetup({ cache: true });
 
       // Toggle the new coursetalk script object
-      const currentSrc = $coursetalkScriptObject.attr('src');
+      const currentSrc = $courseTalkScriptObject.attr('src');
       const newSrc = (currentSrc === readSrc) ? writeSrc : readSrc;
-      $coursetalkScriptObject.attr('src', newSrc);
+      $courseTalkScriptObject.attr('src', newSrc);
       $.getScript(newSrc);
 
       // Switch the button text
       const newText = (newSrc === readSrc) ? 'Write a Review' : 'View Reviews';
-      $coursetalkToggleReadWriteReviews.text(newText);
+      $courseTalkToggleReadWriteReviews.text(newText);
     });
   }
 }
