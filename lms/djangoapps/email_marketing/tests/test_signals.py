@@ -434,7 +434,8 @@ class EmailMarketingTests(TestCase):
     @patch('lms.djangoapps.email_marketing.tasks.update_user.delay')
     @ddt.data(('auth_userprofile', 'gender', 'f', True),
               ('auth_user', 'is_active', 1, True),
-              ('auth_userprofile', 'shoe_size', 1, False))
+              ('auth_userprofile', 'shoe_size', 1, False),
+              ('user_api_userpreference', 'pref-lang', 'es-419', True))
     @ddt.unpack
     def test_modify_field(self, table, setting, value, result, mock_update_user, mock_get_current_request):
         """

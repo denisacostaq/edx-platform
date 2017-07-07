@@ -21,7 +21,7 @@ log = logging.getLogger(__name__)
 # list of changed fields to pass to Sailthru
 CHANGED_FIELDNAMES = ['username', 'is_active', 'name', 'gender', 'education',
                       'age', 'level_of_education', 'year_of_birth',
-                      'country']
+                      'country', 'pref-lang']
 
 
 @receiver(CREATE_LOGON_COOKIE)
@@ -140,8 +140,8 @@ def email_marketing_user_field_changed(sender, user=None, table=None, setting=No
     if user.is_anonymous():
         return
 
-    # ignore anything but User or Profile table
-    if table != 'auth_user' and table != 'auth_userprofile':
+    # ignore anything but User, Profile or UserPreference tables
+    if table not in {'auth_user', 'auth_userprofile', 'user_api_userpreference'}:
         return
 
     # ignore anything not in list of fields to handle
@@ -172,6 +172,10 @@ def _create_sailthru_user_vars(user, profile):
     sailthru_vars = {'username': user.username,
                      'activated': int(user.is_active),
                      'joined_date': user.date_joined.strftime("%Y-%m-%d")}
+
+    # Set the ui_lang to the User's prefered language, if specified. Otherwise use the application's default language.
+    ui_lang = user.preferences.filter(key='pref-lang').first()
+    sailthru_vars['ui_lang'] = (ui_lang and ui_lang.value) or settings.LANGUAGE_CODE
 
     if profile:
         sailthru_vars['fullname'] = profile.name
