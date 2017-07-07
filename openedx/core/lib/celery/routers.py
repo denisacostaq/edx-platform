@@ -27,6 +27,7 @@ class AlternateEnvironmentRouter(object):
         """
         return {}
 
+    @property
     def explicit_queues(self):
         """
         Defines the task -> alternate worker queue to be used when routing.
