@@ -56,8 +56,9 @@ class CourseImportViewTest(SharedModuleStoreTestCase, APITestCase):
         with open(os.path.join(embedded_dir, "course", "2013_Spring.xml"), "w+") as f:
             f.write('<course></course>')
 
-        cls.good_tar = os.path.join(cls.content_dir, "good.tar.gz")
-        with tarfile.open(cls.good_tar, "w:gz") as gtar:
+        cls.good_tar_filename = "good.tar.gz"
+        cls.good_tar_fullpath = os.path.join(cls.content_dir, cls.good_tar_filename)
+        with tarfile.open(cls.good_tar_fullpath, "w:gz") as gtar:
             gtar.add(good_dir)
 
     def get_url(self, course_id):
@@ -75,7 +76,7 @@ class CourseImportViewTest(SharedModuleStoreTestCase, APITestCase):
         """
         Test that an anonymous user cannot access the API and an error is received.
         """
-        with open(self.good_tar, 'rb') as fp:
+        with open(self.good_tar_fullpath, 'rb') as fp:
             resp = self.client.post(self.get_url(self.course_key), {'course_data': fp}, format='multipart')
         self.assertEqual(resp.status_code, status.HTTP_401_UNAUTHORIZED)
 
@@ -84,7 +85,7 @@ class CourseImportViewTest(SharedModuleStoreTestCase, APITestCase):
         Test that a student user cannot access the API and an error is received.
         """
         self.client.login(username=self.student.username, password=self.password)
-        with open(self.good_tar, 'rb') as fp:
+        with open(self.good_tar_fullpath, 'rb') as fp:
             resp = self.client.post(self.get_url(self.course_key), {'course_data': fp}, format='multipart')
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
 
@@ -93,7 +94,7 @@ class CourseImportViewTest(SharedModuleStoreTestCase, APITestCase):
         Test that a staff user can access the API and successfully upload a course
         """
         self.client.login(username=self.staff.username, password=self.password)
-        with open(self.good_tar, 'rb') as fp:
+        with open(self.good_tar_fullpath, 'rb') as fp:
             resp = self.client.post(self.get_url(self.course_key), {'course_data': fp}, format='multipart')
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
 
@@ -102,7 +103,7 @@ class CourseImportViewTest(SharedModuleStoreTestCase, APITestCase):
         Test that a staff user can't access another course via the API
         """
         self.client.login(username=self.staff.username, password=self.password)
-        with open(self.good_tar, 'rb') as fp:
+        with open(self.good_tar_fullpath, 'rb') as fp:
             resp = self.client.post(self.get_url(self.restricted_course_key), {'course_data': fp}, format='multipart')
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
 
@@ -111,14 +112,14 @@ class CourseImportViewTest(SharedModuleStoreTestCase, APITestCase):
         Test that a student user cannot access the API and an error is received.
         """
         self.client.login(username=self.student.username, password=self.password)
-        resp = self.client.get(self.get_url(self.course_key), {'task_id': '1234'})
+        resp = self.client.get(self.get_url(self.course_key), {'task_id': '1234', 'filename': self.good_tar_filename})
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_anonymous_get_status_fails(self):
         """
         Test that an anonymous user cannot access the API and an error is received.
         """
-        resp = self.client.get(self.get_url(self.course_key), {'task_id': '1234'})
+        resp = self.client.get(self.get_url(self.course_key), {'task_id': '1234', 'filename': self.good_tar_filename})
         self.assertEqual(resp.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_staff_get_status_succeeds(self):
@@ -128,10 +129,14 @@ class CourseImportViewTest(SharedModuleStoreTestCase, APITestCase):
         Note: This relies on the fact that we process imports synchronously during testing
         """
         self.client.login(username=self.staff.username, password=self.password)
-        with open(self.good_tar, 'rb') as fp:
+        with open(self.good_tar_fullpath, 'rb') as fp:
             resp = self.client.post(self.get_url(self.course_key), {'course_data': fp}, format='multipart')
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        resp = self.client.get(self.get_url(self.course_key), {'task_id': resp.data['task_id']}, format='multipart')
+        resp = self.client.get(
+            self.get_url(self.course_key),
+            {'task_id': resp.data['task_id'], 'filename': self.good_tar_filename},
+            format='multipart'
+        )
         self.assertEqual(resp.data['state'], UserTaskStatus.SUCCEEDED)
 
     def test_staff_no_access_get_status_fails(self):
@@ -141,16 +146,43 @@ class CourseImportViewTest(SharedModuleStoreTestCase, APITestCase):
         Note: This relies on the fact that we process imports synchronously during testing
         """
         self.client.login(username=self.staff.username, password=self.password)
-        with open(self.good_tar, 'rb') as fp:
+        with open(self.good_tar_fullpath, 'rb') as fp:
             resp = self.client.post(self.get_url(self.course_key), {'course_data': fp}, format='multipart')
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
 
         task_id = resp.data['task_id']
-        resp = self.client.get(self.get_url(self.course_key), {'task_id': task_id}, format='multipart')
+        resp = self.client.get(
+            self.get_url(self.course_key),
+            {'task_id': task_id, 'filename': self.good_tar_filename},
+            format='multipart'
+        )
         self.assertEqual(resp.data['state'], UserTaskStatus.SUCCEEDED)
 
         self.client.logout()
 
         self.client.login(username=self.restricted_staff.username, password=self.password)
-        resp = self.client.get(self.get_url(self.course_key), {'task_id': task_id}, format='multipart')
+        resp = self.client.get(
+            self.get_url(self.course_key),
+            {'task_id': task_id, 'filename': self.good_tar_filename},
+            format='multipart'
+        )
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_course_task_mismatch_get_status_fails(self):
+        """
+        Test that an import followed by a get status as an unauthorized staff fails
+
+        Note: This relies on the fact that we process imports synchronously during testing
+        """
+        self.client.login(username=self.staff.username, password=self.password)
+        with open(self.good_tar_fullpath, 'rb') as fp:
+            resp = self.client.post(self.get_url(self.course_key), {'course_data': fp}, format='multipart')
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+
+        task_id = resp.data['task_id']
+        resp = self.client.get(
+            self.get_url(self.restricted_course_key),
+            {'task_id': task_id, 'filename': self.good_tar_filename},
+            format='multipart'
+        )
+        self.assertEqual(resp.data['state'], UserTaskStatus.SUCCEEDED)

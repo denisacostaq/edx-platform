@@ -22,7 +22,7 @@ from user_tasks.models import UserTaskArtifact, UserTaskStatus
 from student.auth import has_course_author_access
 
 from contentstore.storage import course_import_export_storage
-from contentstore.tasks import import_olx
+from contentstore.tasks import CourseExportTask, import_olx
 from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin, view_auth_classes
 
 log = logging.getLogger(__name__)
@@ -71,6 +71,7 @@ class CourseImportView(CourseImportExportViewMixin, GenericAPIView):
         The HTTP 200 response has the following values.
 
         * task_id: UUID of the created task, usable for checking status
+        * filename: string of the uploaded filename
 
 
     **Example POST Response**
@@ -84,6 +85,7 @@ class CourseImportView(CourseImportExportViewMixin, GenericAPIView):
         A GET request must include the following parameters.
 
         * task_id: (required) The UUID of the task to check, e.g. "4b357bb3-2a1e-441d-9f6c-2210cf76606f"
+        * filename: (required) The filename of the uploaded course .tar.gz
 
     **GET Response Values**
 
@@ -159,7 +161,7 @@ class CourseImportView(CourseImportExportViewMixin, GenericAPIView):
                 error_code='internal_error'
             )
 
-    def get(self, request, course_id):
+    def get(self, request, course_id, filename):
         """
         Check the status of the specified task
         """
@@ -173,7 +175,10 @@ class CourseImportView(CourseImportExportViewMixin, GenericAPIView):
             )
         try:
             task_id = request.GET['task_id']
-            task_status = UserTaskStatus.objects.get(task_id=task_id)
+            filename = request.GET['filename']
+            args = {u'course_key_string': course_id, u'archive_name': filename}
+            name = CourseImportTask.generate_name(args)
+            task_status = UserTaskStatus.objects.filter(name=name, task_id=task_id).first()
             return Response({
                 'state': task_status.state
             })
